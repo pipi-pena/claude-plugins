@@ -1,7 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "session-autotitle",
-  "id": "session-autotitle",
   "owner": {
     "name": "pipi-pena",
     "url": "https://github.com/pipi-pena"
