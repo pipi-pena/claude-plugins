@@ -21,7 +21,7 @@ The summarization call runs with `--bare`, which skips hooks, CLAUDE.md, and plu
 ## Requirements
 
 - Claude Code with the `claude` CLI available on `PATH`.
-- `python3` available on `PATH`.
+- [Node.js](https://nodejs.org/) 18+ available on `PATH` (no TypeScript toolchain needed at runtime — the plugin ships pre-compiled JavaScript in `dist/`).
 - An authenticated `claude` session (subscription login, or `ANTHROPIC_API_KEY` / `apiKeyHelper` configured) — the hook shells out to `claude -p` to generate the title.
 
 ## Install
@@ -39,7 +39,7 @@ Then reload plugins (or restart Claude Code) so the hook takes effect:
 
 ### Alternative: without the plugin system
 
-If you'd rather wire it up by hand, copy `scripts/session-autotitle.py` somewhere and add this to your `settings.json` (global `~/.claude/settings.json`, or project-level `.claude/settings.json`):
+If you'd rather wire it up by hand, copy `dist/session-autotitle.js` somewhere and add this to your `settings.json` (global `~/.claude/settings.json`, or project-level `.claude/settings.json`):
 
 ```json
 {
@@ -50,7 +50,7 @@ If you'd rather wire it up by hand, copy `scripts/session-autotitle.py` somewher
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /path/to/session-autotitle.py",
+            "command": "node /path/to/session-autotitle.js",
             "timeout": 20
           }
         ]
@@ -60,10 +60,22 @@ If you'd rather wire it up by hand, copy `scripts/session-autotitle.py` somewher
 }
 ```
 
+## Development
+
+The hook is written in TypeScript (`src/session-autotitle.ts`) and follows the [ts-patterns](https://github.com/gagoar/typescript-patterns-enforcer) conventions: no `any`, explicit return types, `readonly` by default, `async`/`await` only, and typed (discriminated-union) results instead of silently swallowed errors.
+
+```
+npm install
+npm run typecheck   # tsc --noEmit
+npm run build        # compiles src/ -> dist/
+```
+
+`dist/session-autotitle.js` is committed so the plugin works out of the box with just Node — no build step required for end users.
+
 ## Notes
 
 - Very short sessions (little to no user/assistant content) are skipped — no point summarizing an empty session.
-- If the `claude -p` call fails or times out for any reason, the hook just exits quietly without writing a title. It never blocks session exit.
+- If the `claude -p` call fails or times out for any reason, the hook logs the reason to stderr and exits quietly. It never blocks session exit.
 - Titles are capped at 10 words, Title Case, no punctuation.
 
 ## License

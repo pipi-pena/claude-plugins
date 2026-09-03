@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session-autotitle.py",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/dist/session-autotitle.js",
             "timeout": 20
           }
         ]

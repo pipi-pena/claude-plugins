@@ -1,0 +1,19 @@
+{
+  "name": "session-autotitle",
+  "version": "1.0.0",
+  "description": "Claude Code plugin: auto-generates a short descriptive title for every session on SessionEnd",
+  "private": true,
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
