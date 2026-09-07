@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "pipi-pena-plugins",
+  "description": "Personal plugin collection by pipi-pena",
+  "owner": {
+    "name": "pipi-pena",
+    "url": "https://github.com/pipi-pena"
+  },
+  "plugins": [
+    {
+      "name": "session-autotitle",
+      "description": "Auto-generates a short descriptive title for every Claude Code session when it ends, replacing the raw session UUID in /resume and `claude --resume` pickers.",
+      "author": { "name": "pipi-pena", "url": "https://github.com/pipi-pena" },
+      "homepage": "https://github.com/pipi-pena/session-autotitle",
+      "license": "MIT",
+      "keywords": ["hooks", "session-management", "productivity", "resume", "quality-of-life"],
+      "category": "productivity",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/pipi-pena/session-autotitle.git"
+      }
+    }
+  ]
+}
