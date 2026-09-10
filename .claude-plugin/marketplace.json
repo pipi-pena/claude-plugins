@@ -11,14 +11,21 @@
       "name": "session-autotitle",
       "description": "Auto-generates a short descriptive title for every Claude Code session when it ends, replacing the raw session UUID in /resume and `claude --resume` pickers.",
       "author": { "name": "pipi-pena", "url": "https://github.com/pipi-pena" },
-      "homepage": "https://github.com/pipi-pena/session-autotitle",
+      "homepage": "https://github.com/pipi-pena/claude-plugins/tree/main/session-autotitle",
       "license": "MIT",
       "keywords": ["hooks", "session-management", "productivity", "resume", "quality-of-life"],
       "category": "productivity",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/pipi-pena/session-autotitle.git"
-      }
+      "source": "./session-autotitle"
+    },
+    {
+      "name": "tidy-comments",
+      "description": "Strips redundant, restating and AI-narration comments from changed code in any language, and reminds you to run it before every push or pull request.",
+      "author": { "name": "pipi-pena", "url": "https://github.com/pipi-pena" },
+      "homepage": "https://github.com/pipi-pena/claude-plugins/tree/main/tidy-comments",
+      "license": "MIT",
+      "keywords": ["hooks", "skills", "code-quality", "comments", "pull-request", "pre-push"],
+      "category": "productivity",
+      "source": "./tidy-comments"
     }
   ]
 }

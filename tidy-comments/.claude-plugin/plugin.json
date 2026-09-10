@@ -1,0 +1,13 @@
+{
+  "name": "tidy-comments",
+  "version": "1.0.0",
+  "description": "Strips redundant, restating and AI-narration comments from changed code in any language, and reminds you to run it before every push or pull request.",
+  "author": {
+    "name": "pipi-pena",
+    "url": "https://github.com/pipi-pena"
+  },
+  "homepage": "https://github.com/pipi-pena/claude-plugins/tree/main/tidy-comments",
+  "license": "MIT",
+  "keywords": ["hooks", "skills", "code-quality", "comments", "pull-request", "pre-push"],
+  "hooks": "./hooks/hooks.json"
+}
