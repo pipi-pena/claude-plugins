@@ -1,6 +1,6 @@
 ---
 name: tidy-comments
-description: Strip redundant, verbose or AI-narration comments from changed code in any language, keeping only comments that carry information the code cannot. MANDATORY before pushing to GitHub or opening a PR — run it after the code is final and tests pass, before `git push`, `gh pr create`, or `gh pr edit`. Also use on request ("too many comments", "clean up the comments", "the code is too verbose", "tidy comments"). Operates on the diff only, never the whole repo.
+description: Strip redundant, verbose or AI-narration comments from changed code in any language, keeping only comments that carry information the code cannot. MANDATORY before pushing to GitHub or opening a PR — run it after the code is final and tests pass, before `git push`, `gh pr create`, or `gh pr edit`. Also use on request ("too many comments", "clean up the comments", "the code is too verbose", "tidy comments"). Also governs every comment you write while coding: comments explain the logic, never a ticket, tracker or document. Operates on the diff only, never the whole repo.
 ---
 
 # Tidy comments
@@ -21,6 +21,55 @@ A comment earns its place by doing one of two things:
 Everything else goes. The operative question for each comment: *if I delete
 this, does a future reader lose anything?* If no, delete it.
 
+## Logic, not provenance
+
+A comment says what the code does and why, in terms a reader can understand
+with nothing but the repository in front of them. It never says where the
+requirement came from. Tickets, trackers and documents rot, move behind logins,
+and tell the reader nothing about the behavior.
+
+This applies to the comments you **write** as well as the ones you review: never
+introduce a reference to a tracker, even in new code that is not part of the
+diff being tidied.
+
+Never put these in a comment:
+
+- Issue or ticket ids and links — Linear (`ENG-123`), Jira (`PROJ-456`), GitHub
+  issues and PRs (`#789`, `fixes #12`), Notion pages, Asana, Shortcut, Trello,
+  Slack threads, support tickets
+- Design-doc ids — `RFC-12`, `ADR-3`, `INC-7`, "see the design doc", "per the spec"
+- Incident or project names used as a stand-in for the reason
+- Who asked or reviewed — "requested by product", "per Ana", "as discussed"
+- Phase or rollout labels that only mean something inside a tracker — `F5`,
+  `phase 2`, `P17`
+
+When a comment carries one of these, do one of two things:
+
+1. **The comment has a real reason behind the pointer** — state that reason in
+   plain words and drop the identifier.
+2. **The comment is only a pointer** — delete it.
+
+```go
+// Bad — the ticket is the whole comment; the reader learns nothing
+// RFC-092 R3: never mix features in one Require
+
+// Good — the rule itself, which is what a future edit could break
+// a Require covers a single feature; register a twin route for the other one
+```
+
+```ts
+// Bad
+// Fix for SUP-412: dates shifted a day in Argentina
+
+// Good
+// parse as a local date: new Date("2026-01-01") is UTC midnight and lands on the
+// previous day in negative-offset timezones
+```
+
+If the reason behind a pointer is not visible from the code and you do not know
+it, delete the comment rather than keeping a bare identifier. The reason belongs
+in the commit message or PR description, where tracker links are welcome.
+
 ## Cut these
 
 | Pattern | Example |
@@ -31,6 +80,7 @@ this, does a future reader lose anything?* If no, delete it.
 | Section banners with no content | `# ---- Variables ----`, `### CONFIG ###` |
 | AI / dev-cycle narration | `# Added in this PR`, `# As requested`, `# Updated to fix the bug`, `# NEW:`, `# Changed from X to Y` |
 | Changelog in the source | `# 2026-09-01: added retry` — that's what git log is for |
+| Tracker / ticket / doc pointer | `// ENG-123`, `# see PROJ-456`, `// per RFC-12`, `// fixes #78`, a Notion or Linear URL — state the logic or delete (see *Logic, not provenance*) |
 | Commented-out code | any dead block left "just in case" — git has it |
 | Restates a self-evident name | `# The subscription ID` above `subscription_id` |
 | Type restatement | `# returns a string` where the signature already says `-> str` |
@@ -52,8 +102,10 @@ in doubt, keep.
 - **Comments that are the product**: a `description` field in Terraform or a
   JSON schema, OpenAPI `description:`, JSDoc on an exported public API, help
   text rendered to a user
-- **`TODO` / `FIXME` with an owner or issue link** — keep. A bare `# TODO` with
-  no referent is noise; cut it or ask.
+- **`TODO` / `FIXME` that says what must change and why** — keep, with any
+  tracker id removed. A bare `# TODO` with nothing actionable is noise; cut it
+  or ask. A `TODO` whose only content is a ticket id gets rewritten as the
+  concrete work, or deleted.
 - **Anything on a line you did not change.** Out of scope.
 
 ## Procedure
@@ -73,8 +125,20 @@ in doubt, keep.
 6. **Apply the edits.** Do not produce a report and stop.
 7. **Verify nothing else moved.** `git diff` should show comment-only deletions.
    If a code line changed, you went too far — revert that part.
-8. **Report one line**: how many comments cut, across how many files, and name
-   anything you deliberately kept that looked cuttable.
+8. **Scan the added lines for tracker references.** Search the diff's added lines
+   for ticket ids, issue/PR numbers, RFC/ADR/INC ids, and tracker URLs
+   (`git diff -U0 <base>...HEAD | grep -E '^\+' | grep -iE '[A-Z]{2,}-[0-9]+|#[0-9]{2,}|rfc-?[0-9]|adr-?[0-9]|linear\.app|notion\.so|atlassian'`).
+   Every hit inside a comment is rewritten as the logic or deleted — including
+   comments you wrote yourself earlier in the session. Hits inside string
+   literals, identifiers and test names are data; leave them.
+9. **Commit the edits, then seal the commit.** When the skill came from the
+   plugin's pre-push gate, run `bash "${CLAUDE_PLUGIN_ROOT}/hooks/mark-tidied.sh"`
+   from the repo after committing. The seal records that this exact `HEAD` was
+   tidied; the gate lets `git push` and `gh pr create|edit` through only while
+   the seal matches `HEAD`, so any later commit requires running the skill again.
+   Run it even when there was nothing to cut.
+10. **Report one line**: how many comments cut, across how many files, and name
+    anything you deliberately kept that looked cuttable.
 
 ## Rewrite examples
 

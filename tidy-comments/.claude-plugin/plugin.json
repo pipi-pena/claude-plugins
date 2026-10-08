@@ -1,7 +1,7 @@
 {
   "name": "tidy-comments",
-  "version": "1.0.0",
-  "description": "Strips redundant, restating and AI-narration comments from changed code in any language, and reminds you to run it before every push or pull request.",
+  "version": "1.1.0",
+  "description": "Strips redundant, restating and AI-narration comments from changed code in any language, never leaves ticket or tracker references in comments (they explain the logic only), and blocks every push or pull request until it has run for the current commit.",
   "author": {
     "name": "pipi-pena",
     "url": "https://github.com/pipi-pena"
