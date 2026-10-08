@@ -1,14 +1,46 @@
 #!/usr/bin/env bash
-# Anchored to a command boundary so a merely quoted "git push" in an echo or a
-# heredoc does not trip the reminder.
+# Blocks `git push` and `gh pr create|edit` until tidy-comments has sealed the
+# commit at HEAD (see mark-tidied.sh). A new commit invalidates the seal, so the
+# skill has to run again before the next push.
+#
+# The pattern is anchored to a command boundary so a merely quoted "git push" in
+# an echo or a heredoc does not trip the gate.
 set -u
 
-command_text=$(jq -r '.tool_input.command // empty')
+seal_dir="${TIDY_GATE_DIR:-$HOME/.claude/.tidy-gate}"
+mark_script="$(cd "$(dirname "$0")" && pwd)/mark-tidied.sh"
+
+payload=$(cat)
+command_text=$(printf '%s' "$payload" | jq -r '.tool_input.command // empty')
+session_cwd=$(printf '%s' "$payload" | jq -r '.cwd // empty')
 
 printf '%s' "$command_text" | grep -qE \
-  '(^|[;&|(]|&&|\|\|)[[:space:]]*(git[[:space:]]+push|gh[[:space:]]+pr[[:space:]]+(create|edit))([[:space:]]|$)' \
+  '(^|[;&|(]|&&|\|\|)[[:space:]]*git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push([[:space:]]|$)|(^|[;&|(]|&&|\|\|)[[:space:]]*gh[[:space:]]+pr[[:space:]]+(create|edit)([[:space:]]|$)' \
   || exit 0
 
-cat <<'JSON'
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"About to push or open/edit a PR. Invoke the tidy-comments skill FIRST, unless it already ran since the last code change this session. It strips redundant, restating and AI-narration comments from the CHANGED LINES ONLY, in any language. It must NOT remove linter/scanner directives (# noqa, # type: ignore, //nolint, # checkov:skip, # shellcheck disable, eslint-disable, @ts-expect-error), pragmas, shebangs, build tags, generated-block markers, SPDX or license headers, or comments that are the product (Terraform description, OpenAPI description, public JSDoc). If nothing changed since the last run, just proceed."}}
-JSON
+# The Bash tool resets cwd on every call, so the repo is usually named inside the
+# command itself: `cd <dir> && git push` or `git -C <dir> push`.
+target_dir=$(printf '%s' "$command_text" | sed -nE \
+  -e 's/.*git[[:space:]]+-C[[:space:]]+("([^"]+)"|'"'"'([^'"'"']+)'"'"'|([^[:space:]]+)).*/\2\3\4/p' | head -n1)
+if [ -z "$target_dir" ]; then
+  target_dir=$(printf '%s' "$command_text" | sed -nE \
+    -e 's/(^|.*[;&|(])[[:space:]]*cd[[:space:]]+("([^"]+)"|'"'"'([^'"'"']+)'"'"'|([^[:space:];&|]+)).*/\3\4\5/p' | head -n1)
+fi
+target_dir="${target_dir/#\~/$HOME}"
+case "$target_dir" in
+  "") target_dir="$session_cwd" ;;
+  /*) ;;
+  *) target_dir="${session_cwd:-.}/$target_dir" ;;
+esac
+
+top=$(git -C "$target_dir" rev-parse --show-toplevel 2>/dev/null) || exit 0
+head_sha=$(git -C "$target_dir" rev-parse HEAD 2>/dev/null) || exit 0
+
+seal_key=$(printf '%s' "$top" | shasum | cut -c1-16)
+if [ -f "$seal_dir/$seal_key" ] && [ "$(cat "$seal_dir/$seal_key")" = "$head_sha" ]; then
+  exit 0
+fi
+
+reason="tidy-comments has not run for the commit at HEAD (${head_sha:0:8}) in ${top}. Run the tidy-comments skill on the changed lines (keep directives, pragmas, swagger/OpenAPI annotations, license headers; never leave tracker references in comments), commit any edits, then run: cd '${top}' && bash '${mark_script}' - and retry this command."
+jq -n --arg reason "$reason" \
+  '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$reason}}'
